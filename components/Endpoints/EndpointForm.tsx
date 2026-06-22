@@ -7,6 +7,7 @@ import { Button } from '@/components/UI/Button';
 import { Input } from '@/components/UI/Input';
 import { X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EndpointFormProps {
   endpoint?: Endpoint | null;
@@ -15,6 +16,7 @@ interface EndpointFormProps {
 }
 
 export function EndpointForm({ endpoint, onClose, onSuccess }: EndpointFormProps) {
+  const { tenantKey } = useAuth();
   const isEditing = !!endpoint;
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,10 +38,10 @@ export function EndpointForm({ endpoint, onClose, onSuccess }: EndpointFormProps
       if (!payload.secret) delete payload.secret;
 
       if (isEditing) {
-        await apiClient.put(`/admin/tenants/test-tenant-2/endpoints/${endpoint.id}`, payload);
+        await apiClient.put(`/admin/tenants/${tenantKey}/endpoints/${endpoint.id}`, payload);
         toast.success('Endpoint updated successfully');
       } else {
-        await apiClient.post('/admin/tenants/test-tenant-2/endpoints', payload);
+        await apiClient.post(`/admin/tenants/${tenantKey}/endpoints`, payload);
         toast.success('Endpoint created successfully');
       }
       onSuccess();

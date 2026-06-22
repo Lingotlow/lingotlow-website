@@ -19,8 +19,8 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-lightGray">
+        <div className="w-12 h-12 border-4 border-brand-yellow border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -28,7 +28,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-brand-lightGray">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Header />

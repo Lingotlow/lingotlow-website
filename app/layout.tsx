@@ -6,7 +6,7 @@ import { Providers } from "@/components/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lingotlow - Webhook Routing Platform",
+  title: "Lingotlow - Flawless Webhooks",
   description: "Reliable webhook routing and delivery platform",
 };
 

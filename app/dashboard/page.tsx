@@ -2,75 +2,53 @@
 
 import { useEffect, useState } from 'react';
 import { LayoutWrapper } from '@/components/Layout/LayoutWrapper';
-import { MetricsCards } from '@/components/Dashboard/MetricsCards';
-import { EventsChart } from '@/components/Dashboard/EventsChart';
-import { RecentEvents } from '@/components/Dashboard/RecentEvents';
 import { apiClient } from '@/lib/api-client';
 import { Spinner } from '@/components/UI/Spinner';
-
-interface DashboardData {
-  totalEvents: number;
-  successRate: number;
-  failedEvents: number;
-  activeEndpoints: number;
-  eventsOverTime: Array<{ date: string; delivered: number; failed: number }>;
-  eventsByStatus: { [key: string]: number };
-  recentEvents: Array<{
-    id: string;
-    documentId: string;
-    type: string;
-    status: string;
-    createdAt: string;
-  }>;
-}
+import { useAuth } from '@/hooks/useAuth';
+import { PlusCircle, Webhook, Activity, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const { tenantKey } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [hasData, setHasData] = useState(false);
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    activeEndpoints: 0,
+    successRate: 0,
+  });
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (tenantKey) {
+      fetchDashboardData();
+    }
+  }, [tenantKey]);
 
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implementar endpoint de dashboard no backend
-      // Por enquanto, dados mockados
-      const mockData: DashboardData = {
-        totalEvents: 12547,
-        successRate: 97.8,
-        failedEvents: 276,
-        activeEndpoints: 4,
-        eventsOverTime: [
-          { date: '2026-06-14', delivered: 120, failed: 5 },
-          { date: '2026-06-15', delivered: 145, failed: 3 },
-          { date: '2026-06-16', delivered: 98, failed: 8 },
-          { date: '2026-06-17', delivered: 167, failed: 2 },
-          { date: '2026-06-18', delivered: 134, failed: 6 },
-          { date: '2026-06-19', delivered: 156, failed: 4 },
-          { date: '2026-06-20', delivered: 89, failed: 1 },
-        ],
-        eventsByStatus: {
-          DELIVERED: 11780,
-          FAILED: 276,
-          RETRY: 345,
-          DLQ: 146,
-        },
-        recentEvents: [
-          { id: '1', documentId: 'doc-123', type: 'order.created', status: 'DELIVERED', createdAt: '2026-06-20T10:30:00Z' },
-          { id: '2', documentId: 'doc-456', type: 'payment.succeeded', status: 'FAILED', createdAt: '2026-06-20T10:15:00Z' },
-          { id: '3', documentId: 'doc-789', type: 'order.updated', status: 'DELIVERED', createdAt: '2026-06-20T09:45:00Z' },
-          { id: '4', documentId: 'doc-012', type: 'shipment.created', status: 'RETRY', createdAt: '2026-06-20T09:20:00Z' },
-          { id: '5', documentId: 'doc-345', type: 'order.created', status: 'DELIVERED', createdAt: '2026-06-20T08:55:00Z' },
-        ],
-      };
-      setData(mockData);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load dashboard data');
-      console.error(err);
+      
+      // Buscar eventos
+      const eventsResponse = await apiClient.get(`/admin/tenants/${tenantKey}/events?page=0&size=1`);
+      const events = eventsResponse.data.content || [];
+      
+      // Buscar endpoints
+      const endpointsResponse = await apiClient.get(`/admin/tenants/${tenantKey}/endpoints`);
+      const endpoints = endpointsResponse.data || [];
+      
+      const totalEvents = eventsResponse.data.totalElements || 0;
+      const activeEndpoints = endpoints.filter((e: any) => e.active).length;
+      
+      setStats({
+        totalEvents,
+        activeEndpoints,
+        successRate: 0,
+      });
+      
+      setHasData(totalEvents > 0 || activeEndpoints > 0);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setHasData(false);
     } finally {
       setIsLoading(false);
     }
@@ -86,64 +64,111 @@ export default function DashboardPage() {
     );
   }
 
-  if (error) {
+  // TELA PARA USUÁRIO SEM DADOS
+  if (!hasData) {
     return (
       <LayoutWrapper>
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+        <div className="max-w-4xl mx-auto py-12">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-[#1a1a1a]">Welcome to Lingotlow!</h1>
+            <p className="text-[#6B6B6B] mt-2">You're all set up. Here's how to get started:</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Passo 1 */}
+            <div className="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-6 text-center hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#F5A623] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Webhook className="w-6 h-6 text-[#F5A623]" />
+              </div>
+              <h3 className="font-semibold text-[#1a1a1a]">Step 1: Create an Endpoint</h3>
+              <p className="text-sm text-[#6B6B6B] mt-2">
+                Define where your webhooks should be delivered.
+              </p>
+              <Link
+                href="/endpoints"
+                className="inline-flex items-center mt-4 px-4 py-2 bg-[#F5A623] text-[#1a1a1a] rounded-lg hover:bg-[#D4891C] transition-colors text-sm font-medium"
+              >
+                Create Endpoint
+                <PlusCircle className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+
+            {/* Passo 2 */}
+            <div className="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-6 text-center hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#F5A623] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Activity className="w-6 h-6 text-[#F5A623]" />
+              </div>
+              <h3 className="font-semibold text-[#1a1a1a]">Step 2: Generate an API Key</h3>
+              <p className="text-sm text-[#6B6B6B] mt-2">
+                Create a secure key to authenticate your requests.
+              </p>
+              <Link
+                href="/api-keys"
+                className="inline-flex items-center mt-4 px-4 py-2 bg-[#F5A623] text-[#1a1a1a] rounded-lg hover:bg-[#D4891C] transition-colors text-sm font-medium"
+              >
+                Generate Key
+                <PlusCircle className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+
+            {/* Passo 3 */}
+            <div className="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-6 text-center hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#F5A623] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-6 h-6 text-[#F5A623]" />
+              </div>
+              <h3 className="font-semibold text-[#1a1a1a]">Step 3: Send Your First Webhook</h3>
+              <p className="text-sm text-[#6B6B6B] mt-2">
+                Use your API key to send a webhook and see it in action.
+              </p>
+              <Link
+                href="/events"
+                className="inline-flex items-center mt-4 px-4 py-2 bg-[#F5A623] text-[#1a1a1a] rounded-lg hover:bg-[#D4891C] transition-colors text-sm font-medium"
+              >
+                View Events
+                <BarChart3 className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Dica - removendo links de documentação */}
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <p className="text-sm text-blue-800">
+              💡 Need help? Check the Swagger documentation at{' '}
+              <code className="bg-blue-100 px-2 py-0.5 rounded text-xs">http://localhost:8080/api/swagger-ui.html</code>
+            </p>
+          </div>
         </div>
       </LayoutWrapper>
     );
   }
 
+  // TELA PARA USUÁRIO COM DADOS
   return (
     <LayoutWrapper>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Bem-vindo à sua área administrativa.</p>
+          <p className="text-gray-600 mt-1">Your webhook activity</p>
         </div>
 
-        <MetricsCards
-          totalEvents={data?.totalEvents || 0}
-          successRate={data?.successRate || 0}
-          failedEvents={data?.failedEvents || 0}
-          activeEndpoints={data?.activeEndpoints || 0}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <EventsChart data={data?.eventsOverTime || []} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <p className="text-sm text-gray-600">Total Events</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.totalEvents}</p>
           </div>
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Distribution</h3>
-              <div className="space-y-3">
-                {data?.eventsByStatus && Object.entries(data.eventsByStatus).map(([status, count]) => (
-                  <div key={status}>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">{status}</span>
-                      <span className="font-medium text-gray-900">{count}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                      <div
-                        className={`h-2 rounded-full ${
-                          status === 'DELIVERED' ? 'bg-green-500' :
-                          status === 'FAILED' ? 'bg-red-500' :
-                          status === 'RETRY' ? 'bg-yellow-500' :
-                          'bg-gray-500'
-                        }`}
-                        style={{ width: `${(count / (data?.totalEvents || 1)) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <p className="text-sm text-gray-600">Active Endpoints</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.activeEndpoints}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <p className="text-sm text-gray-600">Success Rate</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{stats.successRate}%</p>
           </div>
         </div>
 
-        <RecentEvents events={data?.recentEvents || []} />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          <p className="text-gray-600">📊 Charts and detailed analytics will appear here as you send more webhooks.</p>
+        </div>
       </div>
     </LayoutWrapper>
   );

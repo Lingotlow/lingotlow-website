@@ -3,33 +3,23 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: #ffffff;
-    --foreground: #0a0a0a;
-    --card: #ffffff;
-    --card-foreground: #0a0a0a;
-    --primary: #2563eb;
-    --primary-foreground: #ffffff;
-    --secondary: #f3f4f6;
-    --secondary-foreground: #111827;
-    --muted: #f3f4f6;
-    --muted-foreground: #6b7280;
-    --accent: #f3f4f6;
-    --accent-foreground: #111827;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    --border: #e5e7eb;
-    --input: #e5e7eb;
-    --ring: #2563eb;
+  body {
+    background-color: #F7F7F7;
+    color: #1a1a1a;
   }
 }
 
-@layer base {
-  * {
-    border-color: var(--border);
+@layer components {
+  .btn-primary {
+    @apply bg-brand-yellow hover:bg-brand-yellow-dark text-brand-black font-semibold py-2 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
   }
-  body {
-    background-color: var(--background);
-    color: var(--foreground);
+  .btn-secondary {
+    @apply bg-brand-black hover:bg-gray-800 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-brand-border hover:shadow-md transition-all duration-200;
+  }
+  .input {
+    @apply w-full px-4 py-2 border border-brand-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:border-transparent transition-all duration-200;
   }
 }
